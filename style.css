@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sasa POS - South African Kitchen System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Patrick+Hand&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- LOGIN SCREEN -->
+  <section id="login-screen" class="screen active">
+    <div class="login-card">
+      <div class="brand">
+        <span class="logo-icon">🍽️</span>
+        <h1>Sasa POS</h1>
+        <p>South African Kitchen Management</p>
+      </div>
+      
+      <form id="login-form" class="form">
+        <div class="input-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" placeholder="Enter username" autocomplete="username" required>
+        </div>
+        
+        <div class="input-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Enter password" autocomplete="current-password" required>
+        </div>
+        
+        <div class="input-group">
+          <label for="role">Select Role</label>
+          <select id="role" required>
+            <option value="">Choose your role...</option>
+            <option value="Cashier">💰 Cashier</option>
+            <option value="Chef">👨‍🍳 Chef</option>
+            <option value="Manager">📊 Manager</option>
+          </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary btn-full">
+          <span>Sign In</span>
+          <span class="icon">→</span>
+        </button>
+        
+        <p class="hint">Demo mode: Any credentials work. Data saves locally.</p>
+      </form>
+    </div>
+  </section>
+
+  <!-- MAIN APPLICATION -->
+  <section id="app-screen" class="screen">
+    <!-- Header Navigation -->
+    <header class="app-header">
+      <div class="header-left">
+        <div class="brand-small">
+          <span>🍽️</span>
+          <strong>Sasa POS</strong>
+        </div>
+        <nav class="main-nav" id="main-nav"></nav>
+      </div>
+      
+      <div class="header-right">
+        <div class="user-badge">
+          <span id="user-name">User</span>
+          <span id="user-role" class="badge">Role</span>
+        </div>
+        
+        <div class="dropdown-menu" id="user-menu">
+          <button class="menu-trigger" id="menu-trigger">
+            <span class="avatar">👤</span>
+            <span class="caret">▼</span>
+          </button>
+          <div class="menu-items" id="menu-items">
+            <a href="#" data-action="profile">👤 My Profile</a>
+            <a href="#" data-action="settings">⚙️ Settings</a>
+            <div class="divider"></div>
+            <a href="#" data-action="logout" class="text-danger">🚪 Logout</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- DASHBOARD (POS) -->
+    <main id="view-dashboard" class="view">
+      <div class="view-header">
+        <h2>New Order</h2>
+        <p>Select items from categories to build an order</p>
+      </div>
+      
+      <div class="pos-layout">
+        <!-- Menu Categories -->
+        <div class="menu-section">
+          <div class="category" data-category="staples">
+            <button class="category-header">
+              <span class="category-icon">🍲</span>
+              <span class="category-title">Staples & Sides</span>
+              <span class="toggle">▼</span>
+            </button>
+            <div class="category-items">
+              <button class="item-card" data-name="Pap" data-price="20">
+                <span class="item-name">Pap</span>
+                <span class="item-price">R20</span>
+              </button>
+              <button class="item-card" data-name="Chakalaka" data-price="25">
+                <span class="item-name">Chakalaka</span>
+                <span class="item-price">R25</span>
+              </button>
+              <button class="item-card" data-name="Dombolo" data-price="30">
+                <span class="item-name">Dombolo</span>
+                <span class="item-price">R30</span>
+              </button>
+              <button class="item-card" data-name="Morogo" data-price="25">
+                <span class="item-name">Morogo</span>
+                <span class="item-price">R25</span>
+              </button>
+              <button class="item-card" data-name="Pap & Chakalaka" data-price="40">
+                <span class="item-name">Pap & Chakalaka</span>
+                <span class="item-price">R40</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="category" data-category="proteins">
+            <button class="category-header">
+              <span class="category-icon">🍖</span>
+              <span class="category-title">Proteins</span>
+              <span class="toggle">▼</span>
+            </button>
+            <div class="category-items">
+              <button class="item-card" data-name="Grilled Meats" data-price="60">
+                <span class="item-name">Grilled Meats</span>
+                <span class="item-price">R60</span>
+              </button>
+              <button class="item-card" data-name="Peri-Peri Chicken" data-price="55">
+                <span class="item-name">Peri-Peri Chicken</span>
+                <span class="item-price">R55</span>
+              </button>
+              <button class="item-card" data-name="Oxtail Stew" data-price="80">
+                <span class="item-name">Oxtail Stew</span>
+                <span class="item-price">R80</span>
+              </button>
+              <button class="item-card" data-name="Tripe (Mogodu)" data-price="70">
+                <span class="item-name">Tripe (Mogodu)</span>
+                <span class="item-price">R70</span>
+              </button>
+              <button class="item-card" data-name="Boerewors" data-price="65">
+                <span class="item-name">Boerewors</span>
+                <span class="item-price">R65</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="category" data-category="vegetarian">
+            <button class="category-header">
+              <span class="category-icon">🥬</span>
+              <span class="category-title">Vegetarian</span>
+              <span class="toggle">▼</span>
+            </button>
+            <div class="category-items">
+              <button class="item-card" data-name="Bean Stew" data-price="40">
+                <span class="item-name">Bean Stew</span>
+                <span class="item-price">R40</span>
+              </button>
+              <button class="item-card" data-name="Pumpkin Curry" data-price="35">
+                <span class="item-name">Pumpkin Curry</span>
+                <span class="item-price">R35</span>
+              </button>
+              <button class="item-card" data-name="Lentil Bobotie" data-price="45">
+                <span class="item-name">Lentil Bobotie</span>
+                <span class="item-price">R45</span>
+              </button>
+              <button class="item-card" data-name="Chakalaka & Pap" data-price="40">
+                <span class="item-name">Chakalaka & Pap</span>
+                <span class="item-price">R40</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="category" data-category="street">
+            <button class="category-header">
+              <span class="category-icon">🍟</span>
+              <span class="category-title">Street Food & Snacks</span>
+              <span class="toggle">▼</span>
+            </button>
+            <div class="category-items">
+              <button class="item-card" data-name="Vetkoek" data-price="25">
+                <span class="item-name">Vetkoek</span>
+                <span class="item-price">R25</span>
+              </button>
+              <button class="item-card" data-name="Samosa" data-price="20">
+                <span class="item-name">Samosa</span>
+                <span class="item-price">R20</span>
+              </button>
+              <button class="item-card" data-name="Bunny Chow" data-price="45">
+                <span class="item-name">Bunny Chow</span>
+                <span class="item-price">R45</span>
+              </button>
+              <button class="item-card" data-name="Kota (Gatsby)" data-price="50">
+                <span class="item-name">Kota (Gatsby)</span>
+                <span class="item-price">R50</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="category" data-category="desserts">
+            <button class="category-header">
+              <span class="category-icon">🍰</span>
+              <span class="category-title">Desserts</span>
+              <span class="toggle">▼</span>
+            </button>
+            <div class="category-items">
+              <button class="item-card" data-name="Malva Pudding" data-price="30">
+                <span class="item-name">Malva Pudding</span>
+                <span class="item-price">R30</span>
+              </button>
+              <button class="item-card" data-name="Koeksisters" data-price="25">
+                <span class="item-name">Koeksisters</span>
+                <span class="item-price">R25</span>
+              </button>
+              <button class="item-card" data-name="Milk Tart" data-price="20">
+                <span class="item-name">Milk Tart</span>
+                <span class="item-price">R20</span>
+              </button>
+              <button class="item-card" data-name="Peppermint Crisp Tart" data-price="35">
+                <span class="item-name">Peppermint Crisp Tart</span>
+                <span class="item-price">R35</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="category" data-category="drinks">
+            <button class="category-header">
+              <span class="category-icon">🥤</span>
+              <span class="category-title">Drinks</span>
+              <span class="toggle">▼</span>
+            </button>
+            <div class="category-items">
+              <button class="item-card" data-name="Mageu" data-price="15">
+                <span class="item-name">Mageu</span>
+                <span class="item-price">R15</span>
+              </button>
+              <button class="item-card" data-name="Rooibos Iced Tea" data-price="20">
+                <span class="item-name">Rooibos Iced Tea</span>
+                <span class="item-price">R20</span>
+              </button>
+              <button class="item-card" data-name="Ginger Beer" data-price="25">
+                <span class="item-name">Ginger Beer</span>
+                <span class="item-price">R25</span>
+              </button>
+              <button class="item-card" data-name="Amasi" data-price="18">
+                <span class="item-name">Amasi</span>
+                <span class="item-price">R18</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Receipt Panel -->
+        <aside class="receipt-section">
+          <div class="receipt-card">
+            <div class="receipt-header">
+              <h3>🧾 Current Order</h3>
+              <span class="order-id" id="current-order-id">Order #1</span>
+            </div>
+            
+            <div class="receipt-items" id="receipt-items">
+              <p class="empty-state">No items added yet</p>
+            </div>
+            
+            <div class="receipt-summary">
+              <div class="summary-line">
+                <span>Subtotal</span>
+                <span id="summary-subtotal">R0.00</span>
+              </div>
+              <div class="summary-line">
+                <span>VAT (15%)</span>
+                <span id="summary-tax">R0.00</span>
+              </div>
+              <div class="summary-line total">
+                <strong>Total</strong>
+                <strong id="summary-total">R0.00</strong>
+              </div>
+            </div>
+            
+            <div class="receipt-actions">
+              <button class="btn btn-success btn-full" id="btn-confirm" disabled>
+                ✅ Confirm Order
+              </button>
+              <button class="btn btn-outline btn-full" id="btn-clear">
+                ❌ Clear All
+              </button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <!-- ORDERS (Kitchen View) -->
+    <main id="view-orders" class="view hidden">
+      <div class="view-header">
+        <h2>Kitchen Orders</h2>
+        <p>Manage and process incoming orders</p>
+      </div>
+      
+      <div class="stats-bar">
+        <div class="stat-box">
+          <span class="stat-value" id="stat-active">0</span>
+          <span class="stat-label">Active</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-value" id="stat-completed">0</span>
+          <span class="stat-label">Completed Today</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-value" id="stat-total">R0</span>
+          <span class="stat-label">Total Revenue</span>
+        </div>
+      </div>
+      
+      <div class="orders-container" id="orders-list">
+        <div class="empty-state-box">
+          <span class="icon">📭</span>
+          <p>No active orders</p>
+          <small>New orders will appear here automatically</small>
+        </div>
+      </div>
+    </main>
+
+    <!-- ADMIN PANEL -->
+    <main id="view-admin" class="view hidden">
+      <div class="view-header">
+        <h2>Administration</h2>
+        <p>Manage users and system settings</p>
+      </div>
+      
+      <div class="admin-grid">
+        <div class="admin-card">
+          <h3>👤 Add New User</h3>
+          <form id="add-user-form" class="form">
+            <div class="input-group">
+              <label>Username</label>
+              <input type="text" id="new-username" placeholder="Enter username" required>
+            </div>
+            <div class="input-group">
+              <label>Password</label>
+              <input type="password" id="new-password" placeholder="Set password" required>
+            </div>
+            <div class="input-group">
+              <label>Role</label>
+              <select id="new-role" required>
+                <option value="Cashier">Cashier</option>
+                <option value="Chef">Chef</option>
+                <option value="Manager">Manager</option>
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full">Add User</button>
+          </form>
+        </div>
+        
+        <div class="admin-card wide">
+          <h3>👥 User Management</h3>
+          <div class="table-wrapper">
+            <table class="data-table" id="users-table">
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>Role</th>
+                  <th>Created</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        
+        <div class="admin-card">
+          <h3>📊 System Overview</h3>
+          <div class="system-stats">
+            <div class="stat-row">
+              <span>Total Orders</span>
+              <strong id="system-orders">0</strong>
+            </div>
+            <div class="stat-row">
+              <span>Total Users</span>
+              <strong id="system-users">0</strong>
+            </div>
+            <div class="stat-row">
+              <span>Storage Used</span>
+              <strong id="system-storage">~0 KB</strong>
+            </div>
+          </div>
+          <button class="btn btn-danger btn-full" id="btn-reset" style="margin-top: 15px;">
+            ⚠️ Reset All Data
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- PROFILE -->
+    <main id="view-profile" class="view hidden">
+      <div class="view-header">
+        <h2>My Profile</h2>
+        <p>Your account information</p>
+      </div>
+      
+      <div class="profile-card">
+        <div class="profile-avatar">
+          <span>👤</span>
+        </div>
+        <div class="profile-info">
+          <h3 id="profile-username">Username</h3>
+          <span class="badge" id="profile-role">Role</span>
+          <p id="profile-created">Member since: Today</p>
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
