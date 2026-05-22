@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sasa POS - South African Kitchen System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- LOGIN SCREEN -->
+  <section id="login-screen" class="screen active">
+    <div class="login-card">
+      <div class="brand">
+        <span class="logo-icon">🍽️</span>
+        <h1>Sasa POS</h1>
+        <p>South African Kitchen Management</p>
+      </div>
+      <form id="login-form" class="form">
+        <div class="input-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" placeholder="Enter username" required>
+        </div>
+        <div class="input-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Enter password" required>
+        </div>
+        <div class="input-group">
+          <label for="role">Select Role</label>
+          <select id="role" required>
+            <option value="">Choose your role...</option>
+            <option value="Cashier">💰 Cashier</option>
+            <option value="Chef">👨‍🍳 Chef</option>
+            <option value="Manager">📊 Manager</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Sign In →</button>
+        <p class="hint">Demo: admin/admin123 | cashier/cashier123 | chef/chef123</p>
+      </form>
+    </div>
+  </section>
+
+  <!-- MAIN APP -->
+  <section id="app-screen" class="screen">
+    <header class="app-header">
+      <div class="header-left">
+        <div class="brand-small"><span>🍽️</span><strong>Sasa POS</strong></div>
+        <nav class="main-nav" id="main-nav"></nav>
+      </div>
+      <div class="header-right">
+        <div class="user-badge">
+          <span id="user-name">User</span>
+          <span id="user-role" class="badge">Role</span>
+        </div>
+        <div class="dropdown-menu" id="user-menu">
+          <button class="menu-trigger" id="menu-trigger">
+            <span class="avatar">👤</span><span class="caret">▼</span>
+          </button>
+          <div class="menu-items" id="menu-items">
+            <a href="#" data-action="profile">👤 My Profile</a>
+            <a href="#" data-action="settings">⚙️ Settings</a>
+            <div class="divider"></div>
+            <a href="#" data-action="logout" class="text-danger">🚪 Logout</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- DASHBOARD (POS) -->
+    <main id="view-dashboard" class="view">
+      <div class="view-header">
+        <h2>New Order</h2>
+        <p>Select items from categories to build an order</p>
+      </div>
+      <div class="pos-layout">
+        <div class="menu-section" id="menu-section"></div>
+        <aside class="receipt-section">
+          <div class="receipt-card">
+            <div class="receipt-header">
+              <h3>🧾 Current Order</h3>
+              <span class="order-id" id="current-order-id">Order #1</span>
+            </div>
+            <div class="receipt-items" id="receipt-items">
+              <p class="empty-state">No items added yet</p>
+            </div>
+            <div class="receipt-summary">
+              <div class="summary-line"><span>Subtotal</span><span id="summary-subtotal">R0.00</span></div>
+              <div class="summary-line"><span>VAT (15%)</span><span id="summary-tax">R0.00</span></div>
+              <div class="summary-line total"><strong>Total</strong><strong id="summary-total">R0.00</strong></div>
+            </div>
+            
+            <!-- CUSTOMER PHONE FIELD -->
+            <div class="customer-phone-section" style="margin: 1rem 0; padding: 1rem; background: #F9FAFB; border-radius: 0.5rem;">
+              <label for="customer-phone" style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; color: #374151;">
+                📱 Customer Phone (for SMS alerts)
+              </label>
+              <input type="tel" id="customer-phone" placeholder="e.g. 0821234567" 
+                     style="width: 100%; padding: 0.75rem; border: 2px solid #E5E7EB; border-radius: 0.5rem; font-size: 1rem;">
+              <small style="display: block; margin-top: 0.25rem; color: #6B7280; font-size: 0.75rem;">
+                Customer will receive SMS when order is ready
+              </small>
+            </div>
+            
+            <div class="receipt-actions">
+              <button class="btn btn-success btn-full" id="btn-confirm" disabled>✅ Confirm Order</button>
+              <button class="btn btn-outline btn-full" id="btn-clear">❌ Clear All</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <!-- KITCHEN ORDERS -->
+    <main id="view-orders" class="view">
+      <div class="view-header"><h2>Kitchen Orders</h2><p>Manage and process incoming orders</p></div>
+      <div class="stats-bar">
+        <div class="stat-box"><span class="stat-value" id="stat-active">0</span><span class="stat-label">Active</span></div>
+        <div class="stat-box"><span class="stat-value" id="stat-completed">0</span><span class="stat-label">Completed Today</span></div>
+        <div class="stat-box"><span class="stat-value" id="stat-total">R0</span><span class="stat-label">Total Revenue</span></div>
+      </div>
+      <div class="orders-container" id="orders-list">
+        <div class="empty-state-box"><span class="icon">📭</span><p>No active orders</p><small>New orders appear automatically</small></div>
+      </div>
+    </main>
+
+    <!-- ADMIN PANEL -->
+    <main id="view-admin" class="view">
+      <div class="view-header"><h2>Administration</h2><p>Manage users, orders, and menu</p></div>
+      
+      <div class="admin-card wide">
+        <h3>📋 All Orders</h3>
+        <div class="table-wrapper">
+          <table class="data-table" id="admin-orders-table">
+            <thead><tr><th>Order #</th><th>Cashier</th><th>Customer Phone</th><th>Total</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="admin-grid">
+        <div class="admin-card">
+          <h3>👤 Add New User</h3>
+          <form id="add-user-form" class="form">
+            <div class="input-group"><label>Username</label><input type="text" id="new-username" required></div>
+            <div class="input-group"><label>Password</label><input type="password" id="new-password" required></div>
+            <div class="input-group"><label>Role</label><select id="new-role"><option value="Cashier">Cashier</option><option value="Chef">Chef</option><option value="Manager">Manager</option></select></div>
+            <button type="submit" class="btn btn-primary btn-full">Add User</button>
+          </form>
+        </div>
+        <div class="admin-card wide">
+          <h3>👥 User Management</h3>
+          <div class="table-wrapper">
+            <table class="data-table" id="admin-users-table">
+              <thead><tr><th>Username</th><th>Role</th><th>Created</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-card wide">
+        <h3>🍽️ Menu Management</h3>
+        <div class="table-wrapper">
+          <table class="data-table" id="admin-menu-table">
+            <thead><tr><th>Item</th><th>Price</th><th>Category</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <div id="toast-container" class="toast-container"></div>
+  <script src="script.js"></script>
+</body>
+</html>

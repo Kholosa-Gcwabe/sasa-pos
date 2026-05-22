@@ -3,12 +3,10 @@
   "version": "1.0.0",
   "description": "Sasa POS - South African Kitchen Management System",
   "scripts": {
-    "dev": "concurrently "npm run server" "npm run client"",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd backend && npm run dev",
     "client": "cd frontend && npx serve . -p 5500",
-    "setup": "cd backend && npx prisma migrate dev --name init && npx prisma db seed",
-    "db:reset": "cd backend && npx prisma migrate reset --force",
-    "db:studio": "cd backend && npx prisma studio"
+    "setup": "cd backend && npx prisma migrate dev --name init && npx prisma db seed"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
