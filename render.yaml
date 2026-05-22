@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: sasa-pos-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npx prisma migrate deploy && npm run build
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sasa-pos-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+      - key: FRONTEND_URL
+        value: https://sasa-pos-backend.onrender.com
+
+databases:
+  - name: sasa-pos-db
+    databaseName: sasapos
+    user: sasapos
