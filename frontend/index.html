@@ -48,19 +48,29 @@
         <nav class="main-nav" id="main-nav"></nav>
       </div>
       <div class="header-right">
-        <div class="user-badge">
-          <span id="user-name">User</span>
-          <span id="user-role" class="badge">Role</span>
+        <div class="user-info">
+          <span id="user-name" class="user-name">User</span>
+          <span id="user-role" class="user-role-badge">Role</span>
         </div>
-        <div class="dropdown-menu" id="user-menu">
-          <button class="menu-trigger" id="menu-trigger">
-            <span class="avatar">👤</span><span class="caret">▼</span>
+        <div class="user-menu-container">
+          <button class="user-menu-btn" id="user-menu-btn">
+            <span class="user-avatar">👤</span>
+            <span class="user-caret">▼</span>
           </button>
-          <div class="menu-items" id="menu-items">
-            <a href="#" data-action="profile">👤 My Profile</a>
-            <a href="#" data-action="settings">⚙️ Settings</a>
-            <div class="divider"></div>
-            <a href="#" data-action="logout" class="text-danger">🚪 Logout</a>
+          <div class="user-dropdown" id="user-dropdown">
+            <a href="#" data-action="profile">
+              <span class="dropdown-icon">👤</span>
+              <span>My Profile</span>
+            </a>
+            <a href="#" data-action="settings">
+              <span class="dropdown-icon">⚙️</span>
+              <span>Settings</span>
+            </a>
+            <div class="dropdown-divider"></div>
+            <a href="#" data-action="logout" class="logout-link">
+              <span class="dropdown-icon">🚪</span>
+              <span>Logout</span>
+            </a>
           </div>
         </div>
       </div>
@@ -90,15 +100,10 @@
             </div>
             
             <!-- CUSTOMER PHONE FIELD -->
-            <div class="customer-phone-section" style="margin: 1rem 0; padding: 1rem; background: #F9FAFB; border-radius: 0.5rem;">
-              <label for="customer-phone" style="display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.5rem; color: #374151;">
-                📱 Customer Phone (for SMS alerts)
-              </label>
-              <input type="tel" id="customer-phone" placeholder="e.g. 0821234567" 
-                     style="width: 100%; padding: 0.75rem; border: 2px solid #E5E7EB; border-radius: 0.5rem; font-size: 1rem;">
-              <small style="display: block; margin-top: 0.25rem; color: #6B7280; font-size: 0.75rem;">
-                Customer will receive SMS when order is ready
-              </small>
+            <div class="customer-phone-section">
+              <label for="customer-phone">📱 Customer Phone (for SMS alerts)</label>
+              <input type="tel" id="customer-phone" placeholder="e.g. 0821234567">
+              <small>Customer will receive SMS when order is ready</small>
             </div>
             
             <div class="receipt-actions">

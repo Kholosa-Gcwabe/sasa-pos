@@ -68,6 +68,7 @@ const menuCategories = [
   ]}
 ];
 
+// ==================== AUTH ====================
 async function handleLogin(e) {
   e.preventDefault();
   const username = document.getElementById('username').value;
@@ -114,6 +115,43 @@ function logout() {
   document.getElementById('login-screen').classList.add('active');
 }
 
+// ==================== USER MENU ====================
+function initUserMenu() {
+  const menuBtn = document.getElementById('user-menu-btn');
+  const dropdown = document.getElementById('user-dropdown');
+  
+  menuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdown.classList.toggle('show');
+  });
+  
+  document.addEventListener('click', () => {
+    dropdown.classList.remove('show');
+  });
+  
+  dropdown.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+  
+  dropdown.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const action = link.dataset.action;
+      
+      if (action === 'logout') {
+        logout();
+      } else if (action === 'profile') {
+        alert('Profile coming soon!');
+      } else if (action === 'settings') {
+        alert('Settings coming soon!');
+      }
+      
+      dropdown.classList.remove('show');
+    });
+  });
+}
+
+// ==================== NAVIGATION ====================
 function initNavigation() {
   const nav = document.getElementById('main-nav');
   const role = State.currentUser?.role;
@@ -160,6 +198,7 @@ function showView(viewId) {
   switchView(viewId);
 }
 
+// ==================== POS (DASHBOARD) ====================
 function renderMenu() {
   const container = document.getElementById('menu-section');
   if (!container) return;
@@ -281,6 +320,7 @@ async function confirmOrder() {
   }
 }
 
+// ==================== KITCHEN (ORDERS) ====================
 async function loadKitchenOrders() {
   try {
     const data = await api.getActiveOrders();
@@ -376,6 +416,7 @@ async function updateKitchenStats() {
   }
 }
 
+// ==================== ADMIN ====================
 async function loadAdminData() {
   await Promise.all([loadAdminOrders(), loadAdminUsers(), loadAdminMenu()]);
 }
@@ -485,14 +526,13 @@ async function deleteMenuItem(id) {
   }
 }
 
+// ==================== INIT ====================
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('login-form').addEventListener('submit', handleLogin);
   document.getElementById('btn-clear')?.addEventListener('click', clearOrder);
   document.getElementById('btn-confirm')?.addEventListener('click', confirmOrder);
   
-  document.querySelectorAll('[data-action="logout"]').forEach(el => {
-    el.addEventListener('click', (e) => { e.preventDefault(); logout(); });
-  });
+  initUserMenu();
   
   document.getElementById('add-user-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();

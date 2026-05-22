@@ -768,3 +768,169 @@ body {
 .table-wrapper {
   overflow-x: auto;
 }
+
+/* ===== USER MENU - CLEAN DESIGN ===== */
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-name {
+  font-weight: 600;
+  color: var(--text);
+  font-size: 0.875rem;
+}
+
+.user-role-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--secondary);
+  color: var(--primary);
+}
+
+/* User Menu Container */
+.user-menu-container {
+  position: relative;
+}
+
+/* Menu Button */
+.user-menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 2px solid var(--border);
+  border-radius: 0.75rem;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.user-menu-btn:hover {
+  border-color: var(--primary-light);
+  background: var(--secondary);
+}
+
+/* Avatar */
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+/* Caret */
+.user-caret {
+  font-size: 0.625rem;
+  color: var(--text-light);
+}
+
+/* Dropdown Menu */
+.user-dropdown {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15);
+  border: 1px solid var(--border);
+  min-width: 220px;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.user-dropdown.show {
+  display: block;
+}
+
+/* Dropdown Items */
+.user-dropdown a {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  border-bottom: 1px solid var(--border);
+}
+
+.user-dropdown a:last-child {
+  border-bottom: none;
+}
+
+.user-dropdown a:hover {
+  background: var(--secondary);
+}
+
+/* Dropdown Icons */
+.dropdown-icon {
+  font-size: 1.125rem;
+  width: 24px;
+  text-align: center;
+}
+
+/* Divider */
+.dropdown-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0;
+}
+
+/* Logout Link */
+.logout-link {
+  color: var(--danger) !important;
+}
+
+.logout-link:hover {
+  background: #FEF2F2 !important;
+}
+
+/* ===== CUSTOMER PHONE SECTION ===== */
+
+.customer-phone-section {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #F9FAFB;
+  border-radius: 0.75rem;
+  border: 2px solid var(--border);
+}
+
+.customer-phone-section label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+}
+
+.customer-phone-section input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid var(--border);
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.customer-phone-section input:focus {
+  outline: none;
+  border-color: var(--primary-light);
+}
+
+.customer-phone-section small {
+  display: block;
+  color: var(--text-light);
+  font-size: 0.75rem;
+}
