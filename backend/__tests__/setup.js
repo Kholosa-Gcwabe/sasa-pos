@@ -1,8 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 
-const prisma = new PrismaClient({
-  datasources: { db: { url: 'file:./test.db' } },
-});
+const prisma = new PrismaClient();
 
 beforeEach(async () => {
   await prisma.orderItem.deleteMany();

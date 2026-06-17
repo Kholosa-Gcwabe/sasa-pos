@@ -34,7 +34,7 @@ describe('Authentication', () => {
         .send({ username: 'testuser', password: 'wrongpassword' });
 
       expect(res.status).toBe(401);
-      expect(res.body.message).toBe('Invalid credentials');
+      expect(res.body.error).toBe('Invalid credentials');
     });
 
     it('should reject non-existent user', async () => {

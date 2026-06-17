@@ -54,8 +54,8 @@ describe('Orders API', () => {
         });
 
       expect(res.status).toBe(201);
-      expect(res.body.data.status).toBe('PENDING');
-      expect(res.body.data.total).toBe(90.00);
+      expect(res.body.order.status).toBe('PENDING');
+      expect(res.body.order.total).toBe(90.00);
     });
 
     it('should reject empty items array', async () => {
@@ -88,7 +88,7 @@ describe('Orders API', () => {
           items: [{ name: 'Test', price: 50, quantity: 1 }],
         });
 
-      const orderId = createRes.body.data.id;
+      const orderId = createRes.body.order.id;
 
       const res = await request(app)
         .put(`/api/orders/${orderId}/status`)
@@ -96,7 +96,7 @@ describe('Orders API', () => {
         .send({ status: 'PREPARING' });
 
       expect(res.status).toBe(200);
-      expect(res.body.data.status).toBe('PREPARING');
+      expect(res.body.order.status).toBe('PREPARING');
     });
 
     it('should reject invalid status', async () => {
@@ -108,7 +108,7 @@ describe('Orders API', () => {
         });
 
       const res = await request(app)
-        .put(`/api/orders/${createRes.body.data.id}/status`)
+        .put(`/api/orders/${createRes.body.order.id}/status`)
         .set('Authorization', `Bearer ${chefToken}`)
         .send({ status: 'INVALID_STATUS' });
 
