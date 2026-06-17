@@ -1,239 +1,255 @@
+// ============================================
+// ✅ Sasa POS Frontend - Complete Integration
+// ============================================
+
 const API_BASE = '/api';
 
+// ============================================
+// ✅ STATE MANAGEMENT
+// ============================================
 const State = {
   currentUser: null,
   currentOrder: [],
   orders: [],
-  menuItems: [],
-  activeView: 'dashboard'
+  menuItems: {},
+  activeView: 'dashboard',
+  socket: null,
+  isOnline: navigator.onLine
 };
 
+// ============================================
+// ✅ API HANDLER
+// ============================================
 const api = {
   async request(endpoint, options = {}) {
     const token = localStorage.getItem('token');
     const url = `${API_BASE}${endpoint}`;
-    const response = await fetch(url, {
+
+    const config = {
       ...options,
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options.headers
       }
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Request failed');
-    return data;
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          // Token expired or invalid
+          localStorage.removeItem('token');
+          window.location.reload();
+        }
+        throw new Error(data.error || `HTTP ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      if (error.name === 'TypeError' && !navigator.onLine) {
+        throw new Error('You are offline. Please check your connection.');
+      }
+      throw error;
+    }
   },
-  login: (creds) => api.request('/auth/login', { method: 'POST', body: JSON.stringify(creds) }),
+
+  // Auth
+  login: (credentials) => api.request('/auth/login', { method: 'POST', body: JSON.stringify(credentials) }),
   getMe: () => api.request('/auth/me'),
+
+  // Orders
   createOrder: (items, customerPhone) => api.request('/orders', { method: 'POST', body: JSON.stringify({ items, customerPhone }) }),
   getActiveOrders: () => api.request('/orders/active'),
-  getAllOrders: () => api.request('/orders'),
   updateOrderStatus: (id, status) => api.request(`/orders/${id}/status`, { method: 'PUT', body: JSON.stringify({ status }) }),
   getTodayStats: () => api.request('/orders/stats/today'),
+  getAllOrders: () => api.request('/orders'),
+  cancelOrder: (id) => api.request(`/orders/${id}/status`, { method: 'PUT', body: JSON.stringify({ status: 'CANCELLED' }) }),
+
+  // Users (Manager only)
   getUsers: () => api.request('/users'),
   createUser: (data) => api.request('/users', { method: 'POST', body: JSON.stringify(data) }),
   updateUser: (id, data) => api.request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteUser: (id) => api.request(`/users/${id}`, { method: 'DELETE' }),
+
+  // Menu
   getMenu: () => api.request('/menu'),
   createMenuItem: (data) => api.request('/menu', { method: 'POST', body: JSON.stringify(data) }),
   deleteMenuItem: (id) => api.request(`/menu/${id}`, { method: 'DELETE' })
 };
 
-const menuCategories = [
-  { name: 'Staples & Sides', icon: '🍲', items: [
-    { name: 'Pap', price: 20 }, { name: 'Chakalaka', price: 25 },
-    { name: 'Dombolo', price: 30 }, { name: 'Morogo', price: 25 },
-    { name: 'Pap & Chakalaka', price: 40 }
-  ]},
-  { name: 'Proteins', icon: '🍖', items: [
-    { name: 'Grilled Meats', price: 60 }, { name: 'Peri-Peri Chicken', price: 55 },
-    { name: 'Oxtail Stew', price: 80 }, { name: 'Tripe (Mogodu)', price: 70 },
-    { name: 'Boerewors', price: 65 }
-  ]},
-  { name: 'Vegetarian', icon: '🥬', items: [
-    { name: 'Bean Stew', price: 40 }, { name: 'Pumpkin Curry', price: 35 },
-    { name: 'Lentil Bobotie', price: 45 }, { name: 'Chakalaka & Pap', price: 40 }
-  ]},
-  { name: 'Street Food', icon: '🍟', items: [
-    { name: 'Vetkoek', price: 25 }, { name: 'Samosa', price: 20 },
-    { name: 'Bunny Chow', price: 45 }, { name: 'Kota (Gatsby)', price: 50 }
-  ]},
-  { name: 'Desserts', icon: '🍰', items: [
-    { name: 'Malva Pudding', price: 30 }, { name: 'Koeksisters', price: 25 },
-    { name: 'Milk Tart', price: 20 }, { name: 'Peppermint Crisp Tart', price: 35 }
-  ]},
-  { name: 'Drinks', icon: '🥤', items: [
-    { name: 'Mageu', price: 15 }, { name: 'Rooibos Iced Tea', price: 20 },
-    { name: 'Ginger Beer', price: 25 }, { name: 'Amasi', price: 18 }
-  ]}
-];
+// ============================================
+// ✅ TOAST NOTIFICATIONS
+// ============================================
+const Toast = {
+  container: document.getElementById('toast-container'),
 
-// ==================== AUTH ====================
+  show(message, type = 'info', duration = 4000) {
+    const toast = document.createElement('div');
+    toast.className = `toast toast--${type}`;
+
+    const icons = {
+      success: '✅',
+      error: '❌',
+      warning: '⚠️',
+      info: 'ℹ️'
+    };
+
+    toast.innerHTML = `
+      <span class="toast__icon">${icons[type] || icons.info}</span>
+      <span class="toast__message">${message}</span>
+      <button class="toast__close" onclick="this.parentElement.remove()">×</button>
+    `;
+
+    this.container.appendChild(toast);
+
+    // Auto remove
+    setTimeout(() => {
+      toast.style.animation = 'slideInRight 0.4s ease reverse';
+      setTimeout(() => toast.remove(), 400);
+    }, duration);
+  }
+};
+
+// ============================================
+// ✅ AUTHENTICATION
+// ============================================
 async function handleLogin(e) {
   e.preventDefault();
-  const username = document.getElementById('username').value;
+
+  const username = document.getElementById('username').value.trim();
   const password = document.getElementById('password').value;
   const role = document.getElementById('role').value;
-  
+
+  if (!username || !password || !role) {
+    Toast.show('Please fill in all fields', 'error');
+    return;
+  }
+
   try {
     const data = await api.login({ username, password });
-    
+
+    // Verify role matches
     if (data.user.role !== role) {
-      alert(`You selected ${role} but you are a ${data.user.role}. Logging in as ${data.user.role}.`);
+      Toast.show(`You selected ${role} but you are a ${data.user.role}`, 'warning');
     }
-    
+
     localStorage.setItem('token', data.accessToken);
     State.currentUser = data.user;
-    
-    document.getElementById('login-screen').classList.remove('active');
-    document.getElementById('app-screen').classList.add('active');
-    
-    document.getElementById('user-name').textContent = data.user.username;
-    document.getElementById('user-role').textContent = data.user.role;
-    
-    initNavigation();
-    renderMenu();
-    showView('dashboard');
-    
-    if (data.user.role === 'Chef') {
-      showView('orders');
-      loadKitchenOrders();
-    } else if (data.user.role === 'Manager') {
-      loadAdminData();
-    }
-    
-  } catch (err) {
-    alert(err.message);
+
+    Toast.show(`Welcome back, ${data.user.username}!`, 'success');
+    initApp();
+
+  } catch (error) {
+    Toast.show(error.message, 'error');
   }
 }
 
 function logout() {
+  if (State.socket) {
+    State.socket.disconnect();
+  }
   localStorage.removeItem('token');
   State.currentUser = null;
   State.currentOrder = [];
+
   document.getElementById('app-screen').classList.remove('active');
   document.getElementById('login-screen').classList.add('active');
+  document.getElementById('login-form').reset();
+
+  Toast.show('Logged out successfully', 'info');
 }
 
-// ==================== USER MENU ====================
-function initUserMenu() {
-  const menuBtn = document.getElementById('user-menu-btn');
-  const dropdown = document.getElementById('user-dropdown');
-  
-  menuBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    dropdown.classList.toggle('show');
-  });
-  
-  document.addEventListener('click', () => {
-    dropdown.classList.remove('show');
-  });
-  
-  dropdown.addEventListener('click', (e) => {
-    e.stopPropagation();
-  });
-  
-  dropdown.querySelectorAll('a').forEach(link => {
-    link.addEventListener('click', (e) => {
-      e.preventDefault();
-      const action = link.dataset.action;
-      
-      if (action === 'logout') {
-        logout();
-      } else if (action === 'profile') {
-        alert('Profile coming soon!');
-      } else if (action === 'settings') {
-        alert('Settings coming soon!');
-      }
-      
-      dropdown.classList.remove('show');
-    });
-  });
-}
-
-// ==================== NAVIGATION ====================
+// ============================================
+// ✅ NAVIGATION & VIEWS
+// ============================================
 function initNavigation() {
   const nav = document.getElementById('main-nav');
   const role = State.currentUser?.role;
-  
-  let links = [];
-  
-  if (role === 'Cashier') {
-    links = [{ id: 'dashboard', label: '🛒 POS' }];
-  } else if (role === 'Chef') {
-    links = [{ id: 'orders', label: '👨‍🍳 Kitchen' }];
-  } else if (role === 'Manager') {
-    links = [
-      { id: 'dashboard', label: '🛒 POS' },
-      { id: 'orders', label: '👨‍🍳 Kitchen' },
-      { id: 'admin', label: '⚙️ Admin' }
-    ];
-  }
-  
-  nav.innerHTML = links.map(link => `
-    <button class="nav-link ${State.activeView === link.id ? 'active' : ''}" 
-            data-view="${link.id}" onclick="switchView('${link.id}')">
-      ${link.label}
-    </button>
-  `).join('');
+
+  const links = [
+    { id: 'dashboard', label: '🛒 POS', roles: ['Cashier', 'Manager'] },
+    { id: 'orders', label: '👨‍🍳 Kitchen', roles: ['Chef', 'Manager'] },
+    { id: 'admin', label: '⚙️ Admin', roles: ['Manager'] }
+  ];
+
+  nav.innerHTML = links
+    .filter(link => link.roles.includes(role))
+    .map(link => `
+      <button class="nav-link ${State.activeView === link.id ? 'active' : ''}" 
+              data-view="${link.id}">
+        ${link.label}
+      </button>
+    `).join('');
+
+  nav.querySelectorAll('.nav-link').forEach(btn => {
+    btn.addEventListener('click', () => switchView(btn.dataset.view));
+  });
 }
 
 function switchView(viewId) {
+  // Hide all views
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-  
-  const targetView = document.getElementById('view-' + viewId);
-  if (targetView) targetView.classList.add('active');
-  
+
+  // Show selected view
+  const targetView = document.getElementById(`view-${viewId}`);
+  if (targetView) {
+    targetView.classList.add('active');
+    State.activeView = viewId;
+  }
+
+  // Update nav active state
   const navBtn = document.querySelector(`[data-view="${viewId}"]`);
   if (navBtn) navBtn.classList.add('active');
-  
-  State.activeView = viewId;
-  
-  if (viewId === 'orders') loadKitchenOrders();
+
+  // View-specific initialization
+  if (viewId === 'orders') loadOrders();
   if (viewId === 'admin') loadAdminData();
 }
 
-function showView(viewId) {
-  switchView(viewId);
-}
+// ============================================
+// ✅ MENU & ORDER MANAGEMENT
+// ============================================
+function initMenu() {
+  // Category toggle
+  document.querySelectorAll('.category-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const category = header.closest('.category');
+      category.classList.toggle('open');
+    });
+  });
 
-// ==================== POS (DASHBOARD) ====================
-function renderMenu() {
-  const container = document.getElementById('menu-section');
-  if (!container) return;
-  
-  container.innerHTML = menuCategories.map((cat, idx) => `
-    <div class="category ${idx === 0 ? 'open' : ''}">
-      <button class="category-header" onclick="toggleCategory(this)">
-        <span class="category-icon">${cat.icon}</span>
-        <span class="category-title">${cat.name}</span>
-        <span class="toggle">▼</span>
-      </button>
-      <div class="category-items">
-        ${cat.items.map(item => `
-          <button class="item-card" onclick="addItem('${item.name}', ${item.price})">
-            <span class="item-name">${item.name}</span>
-            <span class="item-price">R${item.price}</span>
-          </button>
-        `).join('')}
-      </div>
-    </div>
-  `).join('');
-}
+  // Open first category by default
+  document.querySelector('.category')?.classList.add('open');
 
-function toggleCategory(header) {
-  header.closest('.category').classList.toggle('open');
+  // Item click handlers
+  document.querySelectorAll('.item-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const name = card.dataset.name;
+      const price = parseFloat(card.dataset.price);
+      addItem(name, price);
+    });
+  });
+
+  // Receipt actions
+  document.getElementById('btn-confirm')?.addEventListener('click', confirmOrder);
+  document.getElementById('btn-clear')?.addEventListener('click', clearOrder);
 }
 
 function addItem(name, price) {
   const existing = State.currentOrder.find(item => item.name === name);
+
   if (existing) {
     existing.quantity += 1;
   } else {
     State.currentOrder.push({ name, price, quantity: 1 });
   }
+
   renderOrder();
+  Toast.show(`Added ${name}`, 'success', 1500);
 }
 
 function removeItem(index) {
@@ -244,49 +260,56 @@ function removeItem(index) {
 function updateQuantity(index, delta) {
   const item = State.currentOrder[index];
   item.quantity += delta;
-  if (item.quantity <= 0) State.currentOrder.splice(index, 1);
+
+  if (item.quantity <= 0) {
+    State.currentOrder.splice(index, 1);
+  }
+
   renderOrder();
 }
 
 function renderOrder() {
   const list = document.getElementById('receipt-items');
   const confirmBtn = document.getElementById('btn-confirm');
-  
+
   if (State.currentOrder.length === 0) {
     list.innerHTML = '<p class="empty-state">No items added yet</p>';
     confirmBtn.disabled = true;
     updateTotals(0);
     return;
   }
-  
+
   confirmBtn.disabled = false;
+
   let subtotal = 0;
-  
+
   list.innerHTML = State.currentOrder.map((item, index) => {
     const itemTotal = item.price * item.quantity;
     subtotal += itemTotal;
+
     return `
       <div class="receipt-item">
-        <div>
-          <div style="font-weight: 600;">${item.name}</div>
-          <div style="font-size: 0.875rem; color: #6B7280;">R${item.price} × ${item.quantity}</div>
+        <div class="receipt-item__info">
+          <span class="receipt-item__name">${item.name}</span>
+          <span class="receipt-item__price">R${item.price} × ${item.quantity}</span>
         </div>
         <div style="display: flex; align-items: center; gap: 8px;">
-          <button class="btn btn-sm" onclick="updateQuantity(${index}, -1)" style="padding: 2px 8px; font-size: 0.75rem;">−</button>
+          <button class="btn btn-sm" onclick="updateQuantity(${index}, -1)" style="padding: 2px 8px;">−</button>
           <span style="font-weight: bold; min-width: 20px; text-align: center;">${item.quantity}</span>
-          <button class="btn btn-sm" onclick="updateQuantity(${index}, 1)" style="padding: 2px 8px; font-size: 0.75rem;">+</button>
-          <button onclick="removeItem(${index})" style="background: none; border: none; color: #EF4444; cursor: pointer; font-size: 1.25rem;">×</button>
+          <button class="btn btn-sm" onclick="updateQuantity(${index}, 1)" style="padding: 2px 8px;">+</button>
+          <button class="receipt-item__remove" onclick="removeItem(${index})">×</button>
         </div>
       </div>
     `;
   }).join('');
-  
+
   updateTotals(subtotal);
 }
 
 function updateTotals(subtotal) {
   const vat = subtotal * 0.15;
   const total = subtotal + vat;
+
   document.getElementById('summary-subtotal').textContent = `R${subtotal.toFixed(2)}`;
   document.getElementById('summary-tax').textContent = `R${vat.toFixed(2)}`;
   document.getElementById('summary-total').textContent = `R${total.toFixed(2)}`;
@@ -294,47 +317,57 @@ function updateTotals(subtotal) {
 
 function clearOrder() {
   if (State.currentOrder.length === 0) return;
+
   if (confirm('Clear all items from current order?')) {
     State.currentOrder = [];
     renderOrder();
+    Toast.show('Order cleared', 'info');
   }
 }
 
 async function confirmOrder() {
   if (State.currentOrder.length === 0) {
-    alert('No items in order!');
+    Toast.show('No items in order!', 'error');
     return;
   }
-  
-  const customerPhone = document.getElementById('customer-phone').value;
-  
+
+  const customerPhone = document.getElementById('customer-phone')?.value?.trim() || null;
+
   try {
     const data = await api.createOrder(State.currentOrder, customerPhone);
-    alert(`✅ Order ${data.order.orderNumber} created successfully!${customerPhone ? '\n📱 SMS will be sent to: ' + customerPhone : ''}`);
+
+    Toast.show(`Order ${data.order.orderNumber} created!`, 'success');
+
     State.currentOrder = [];
     renderOrder();
+
+    // Update order ID display
     document.getElementById('current-order-id').textContent = `Order #${data.order.orderNumber}`;
-    document.getElementById('customer-phone').value = '';
-  } catch (err) {
-    alert(err.message);
+
+  } catch (error) {
+    Toast.show(error.message, 'error');
   }
 }
 
-// ==================== KITCHEN (ORDERS) ====================
-async function loadKitchenOrders() {
+// ============================================
+// ✅ KITCHEN ORDERS VIEW
+// ============================================
+async function loadOrders() {
   try {
     const data = await api.getActiveOrders();
     State.orders = data.orders;
-    renderKitchenOrders();
-    updateKitchenStats();
-  } catch (err) {
-    console.error('Failed to load orders:', err);
+
+    renderOrders();
+    updateStats();
+
+  } catch (error) {
+    Toast.show('Failed to load orders: ' + error.message, 'error');
   }
 }
 
-function renderKitchenOrders() {
+function renderOrders() {
   const container = document.getElementById('orders-list');
-  
+
   if (State.orders.length === 0) {
     container.innerHTML = `
       <div class="empty-state-box">
@@ -345,9 +378,9 @@ function renderKitchenOrders() {
     `;
     return;
   }
-  
+
   container.innerHTML = State.orders.map(order => `
-    <div class="order-card">
+    <div class="order-card ${order.status === 'COMPLETED' ? 'order-card--completed' : ''}" data-order-id="${order.id}">
       <div class="order-card__header">
         <div class="order-card__info">
           <h4>Order ${order.orderNumber}</h4>
@@ -357,7 +390,7 @@ function renderKitchenOrders() {
         </div>
         <span class="order-card__total">R${order.total.toFixed(2)}</span>
       </div>
-      
+
       <div class="order-card__items">
         ${order.items.map(item => `
           <div class="order-card__item">
@@ -366,88 +399,92 @@ function renderKitchenOrders() {
           </div>
         `).join('')}
       </div>
-      
-      ${order.customerPhone ? `
-        <div style="padding: 0.5rem; background: #DBEAFE; border-radius: 0.5rem; margin: 0.5rem 0; font-size: 0.875rem;">
-          📱 ${order.customerPhone}
-        </div>
-      ` : ''}
-      
-      <div class="order-card__status">
-        <span class="status-badge status-${order.status.toLowerCase()}">${order.status}</span>
-      </div>
-      
+
       <div class="order-card__actions">
-        ${getKitchenActions(order)}
+        ${getOrderActions(order)}
       </div>
     </div>
   `).join('');
+
+  // Attach action handlers
+  container.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', handleOrderAction);
+  });
 }
 
-function getKitchenActions(order) {
-  if (order.status === 'PENDING') {
-    return `<button class="btn btn-primary" onclick="updateOrder('${order.id}', 'PREPARING')">👨‍🍳 Start Preparing</button>`;
-  } else if (order.status === 'PREPARING') {
-    return `<button class="btn btn-success" onclick="updateOrder('${order.id}', 'READY')">✅ Mark Ready</button>`;
-  } else if (order.status === 'READY') {
-    return `<button class="btn btn-success" onclick="updateOrder('${order.id}', 'COMPLETED')">🎉 Complete Order</button>`;
-  }
-  return '';
+function getOrderActions(order) {
+  const statusFlow = {
+    'PENDING': { next: 'PREPARING', label: 'Start Preparing', class: 'btn-primary' },
+    'PREPARING': { next: 'READY', label: 'Mark Ready', class: 'btn-success' },
+    'READY': { next: 'COMPLETED', label: 'Complete', class: 'btn-success' }
+  };
+
+  const flow = statusFlow[order.status];
+
+  if (!flow) return '';
+
+  return `
+    <button class="btn ${flow.class}" data-action="status" data-id="${order.id}" data-next="${flow.next}">
+      ${flow.label}
+    </button>
+    <button class="btn btn-outline" data-action="cancel" data-id="${order.id}">
+      Cancel
+    </button>
+  `;
 }
 
-async function updateOrder(id, status) {
+async function handleOrderAction(e) {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+
+  const { action, id, next } = btn.dataset;
+
   try {
-    await api.updateOrderStatus(id, status);
-    alert(`Order updated to ${status}!`);
-    loadKitchenOrders();
-  } catch (err) {
-    alert(err.message);
+    if (action === 'status') {
+      await api.updateOrderStatus(id, next);
+      Toast.show(`Order updated to ${next}`, 'success');
+    } else if (action === 'cancel') {
+      if (!confirm('Cancel this order?')) return;
+      await api.cancelOrder(id);
+      Toast.show('Order cancelled', 'warning');
+    }
+
+    loadOrders();
+
+  } catch (error) {
+    Toast.show(error.message, 'error');
   }
 }
 
-async function updateKitchenStats() {
+async function updateStats() {
   try {
     const stats = await api.getTodayStats();
+
     document.getElementById('stat-active').textContent = stats.active;
     document.getElementById('stat-completed').textContent = stats.completedToday;
     document.getElementById('stat-total').textContent = `R${stats.totalRevenue.toFixed(2)}`;
-  } catch (err) {
-    console.error('Stats error:', err);
+
+  } catch (error) {
+    console.error('Failed to load stats:', error);
   }
 }
 
-// ==================== ADMIN ====================
+// ============================================
+// ✅ ADMIN PANEL
+// ============================================
 async function loadAdminData() {
-  await Promise.all([loadAdminOrders(), loadAdminUsers(), loadAdminMenu()]);
+  await Promise.all([
+    loadUsers(),
+    loadAllOrders(),
+    loadMenuItems()
+  ]);
 }
 
-async function loadAdminOrders() {
-  try {
-    const data = await api.getAllOrders();
-    const tbody = document.querySelector('#admin-orders-table tbody');
-    if (!tbody) return;
-    
-    tbody.innerHTML = data.orders.map(order => `
-      <tr>
-        <td><strong>${order.orderNumber}</strong></td>
-        <td>${order.user?.username || 'Unknown'}</td>
-        <td>${order.customerPhone || '—'}</td>
-        <td>R${order.total.toFixed(2)}</td>
-        <td><span class="badge">${order.status}</span></td>
-        <td>${new Date(order.createdAt).toLocaleDateString()}</td>
-      </tr>
-    `).join('');
-  } catch (err) {
-    console.error('Failed to load orders:', err);
-  }
-}
-
-async function loadAdminUsers() {
+async function loadUsers() {
   try {
     const data = await api.getUsers();
-    const tbody = document.querySelector('#admin-users-table tbody');
-    if (!tbody) return;
-    
+    const tbody = document.querySelector('#users-table tbody');
+
     tbody.innerHTML = data.users.map(user => `
       <tr>
         <td><strong>${user.username}</strong></td>
@@ -459,94 +496,291 @@ async function loadAdminUsers() {
           </span>
         </td>
         <td>
-          <button class="btn btn-sm" onclick="toggleUser('${user.id}', ${!user.isActive})">
+          <button class="btn btn-sm" onclick="toggleUserStatus('${user.id}', ${!user.isActive})">
             ${user.isActive ? 'Deactivate' : 'Activate'}
           </button>
           ${user.id !== State.currentUser.id ? `
-            <button class="btn btn-sm btn-danger" onclick="deleteUser('${user.id}')">Delete</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteUser('${user.id}')">
+              Delete
+            </button>
           ` : ''}
         </td>
       </tr>
     `).join('');
-  } catch (err) {
-    console.error('Failed to load users:', err);
+
+  } catch (error) {
+    Toast.show('Failed to load users', 'error');
   }
 }
 
-async function loadAdminMenu() {
+async function loadAllOrders() {
+  try {
+    const data = await api.getAllOrders();
+    const tbody = document.querySelector('#orders-table tbody');
+
+    tbody.innerHTML = data.orders.map(order => `
+      <tr>
+        <td>${order.orderNumber}</td>
+        <td>${order.user?.username || 'Unknown'}</td>
+        <td>${order.customerPhone || '-'}</td>
+        <td>R${order.total.toFixed(2)}</td>
+        <td><span class="status-badge status-${order.status.toLowerCase()}">${order.status}</span></td>
+        <td>${new Date(order.createdAt).toLocaleDateString()}</td>
+      </tr>
+    `).join('');
+
+  } catch (error) {
+    Toast.show('Failed to load orders', 'error');
+  }
+}
+
+async function loadMenuItems() {
   try {
     const data = await api.getMenu();
-    const tbody = document.querySelector('#admin-menu-table tbody');
-    if (!tbody) return;
-    
+    const tbody = document.querySelector('#menu-table tbody');
+
     tbody.innerHTML = data.items.map(item => `
       <tr>
         <td>${item.name}</td>
         <td>R${item.price.toFixed(2)}</td>
-        <td><span class="badge">${item.category}</span></td>
+        <td>${item.category}</td>
         <td>
-          <button class="btn btn-sm btn-danger" onclick="deleteMenuItem('${item.id}')">Delete</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteMenuItem('${item.id}')">
+            Delete
+          </button>
         </td>
       </tr>
     `).join('');
-  } catch (err) {
-    console.error('Failed to load menu:', err);
+
+  } catch (error) {
+    Toast.show('Failed to load menu', 'error');
   }
 }
 
-async function toggleUser(id, isActive) {
+async function toggleUserStatus(id, isActive) {
   try {
     await api.updateUser(id, { isActive });
-    alert(`User ${isActive ? 'activated' : 'deactivated'}!`);
-    loadAdminUsers();
-  } catch (err) {
-    alert(err.message);
+    Toast.show(`User ${isActive ? 'activated' : 'deactivated'}`, 'success');
+    loadUsers();
+  } catch (error) {
+    Toast.show(error.message, 'error');
   }
 }
 
 async function deleteUser(id) {
   if (!confirm('Delete this user permanently?')) return;
+
   try {
     await api.deleteUser(id);
-    alert('User deleted!');
-    loadAdminUsers();
-  } catch (err) {
-    alert(err.message);
+    Toast.show('User deleted', 'success');
+    loadUsers();
+  } catch (error) {
+    Toast.show(error.message, 'error');
   }
 }
 
 async function deleteMenuItem(id) {
   if (!confirm('Delete this menu item?')) return;
+
   try {
     await api.deleteMenuItem(id);
-    alert('Menu item deleted!');
-    loadAdminMenu();
-  } catch (err) {
-    alert(err.message);
+    Toast.show('Menu item deleted', 'success');
+    loadMenuItems();
+  } catch (error) {
+    Toast.show(error.message, 'error');
   }
 }
 
-// ==================== INIT ====================
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('login-form').addEventListener('submit', handleLogin);
-  document.getElementById('btn-clear')?.addEventListener('click', clearOrder);
-  document.getElementById('btn-confirm')?.addEventListener('click', confirmOrder);
-  
-  initUserMenu();
-  
-  document.getElementById('add-user-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const username = document.getElementById('new-username').value;
-    const password = document.getElementById('new-password').value;
-    const role = document.getElementById('new-role').value;
-    
-    try {
-      await api.createUser({ username, password, role });
-      alert('User created!');
-      e.target.reset();
-      loadAdminUsers();
-    } catch (err) {
-      alert(err.message);
+// ============================================
+// ✅ ADD USER FORM (Admin)
+// ============================================
+function initAdminForms() {
+  const userForm = document.getElementById('add-user-form');
+  if (userForm) {
+    userForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById('new-username').value.trim();
+      const password = document.getElementById('new-password').value;
+      const role = document.getElementById('new-role').value;
+
+      try {
+        await api.createUser({ username, password, role });
+        Toast.show('User created successfully', 'success');
+        userForm.reset();
+        loadUsers();
+      } catch (error) {
+        Toast.show(error.message, 'error');
+      }
+    });
+  }
+
+  const menuForm = document.getElementById('add-menu-form');
+  if (menuForm) {
+    menuForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById('new-item-name').value.trim();
+      const price = parseFloat(document.getElementById('new-item-price').value);
+      const category = document.getElementById('new-item-category').value;
+      const description = document.getElementById('new-item-description').value.trim();
+
+      try {
+        await api.createMenuItem({ name, price, category, description });
+        Toast.show('Menu item created', 'success');
+        menuForm.reset();
+        loadMenuItems();
+      } catch (error) {
+        Toast.show(error.message, 'error');
+      }
+    });
+  }
+}
+
+// ============================================
+// ✅ USER MENU DROPDOWN
+// ============================================
+function initUserMenu() {
+  const trigger = document.getElementById('menu-trigger');
+  const menu = document.getElementById('user-menu');
+
+  if (!trigger || !menu) return;
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menu.classList.toggle('open');
+  });
+
+  document.addEventListener('click', () => {
+    menu.classList.remove('open');
+  });
+
+  // Menu actions
+  document.querySelectorAll('#menu-items a').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const action = link.dataset.action;
+
+      switch(action) {
+        case 'profile':
+          Toast.show('Profile coming soon!', 'info');
+          break;
+        case 'settings':
+          Toast.show('Settings coming soon!', 'info');
+          break;
+        case 'logout':
+          logout();
+          break;
+      }
+    });
+  });
+}
+
+// ============================================
+// ✅ WEBSOCKET (REAL-TIME)
+// ============================================
+function initSocket() {
+  if (typeof io === 'undefined') {
+    console.warn('Socket.io not loaded');
+    return;
+  }
+
+  const socket = io(window.location.origin, {
+    transports: ['websocket', 'polling']
+  });
+
+  socket.on('connect', () => {
+    console.log('Socket connected:', socket.id);
+    if (State.currentUser?.role === 'Chef' || State.currentUser?.role === 'Manager') {
+      socket.emit('join:kitchen');
     }
   });
+
+  socket.on('order:created', (order) => {
+    Toast.show(`New order ${order.orderNumber} received!`, 'info');
+    if (State.activeView === 'orders') {
+      loadOrders();
+    }
+  });
+
+  socket.on('order:updated', (order) => {
+    if (State.activeView === 'orders') {
+      loadOrders();
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Socket disconnected');
+  });
+
+  State.socket = socket;
+}
+
+// ============================================
+// ✅ APP INITIALIZATION
+// ============================================
+async function initApp() {
+  // Hide login, show app
+  document.getElementById('login-screen').classList.remove('active');
+  document.getElementById('app-screen').classList.add('active');
+
+  // Update user info
+  document.getElementById('user-name').textContent = State.currentUser.username;
+  document.getElementById('user-role').textContent = State.currentUser.role;
+
+  // Initialize navigation based on role
+  initNavigation();
+  initMenu();
+  initUserMenu();
+  initAdminForms();
+
+  // Show appropriate default view
+  if (State.currentUser.role === 'Chef') {
+    switchView('orders');
+  } else {
+    switchView('dashboard');
+  }
+
+  // Initialize real-time
+  initSocket();
+
+  // Periodic refresh for orders (fallback if socket fails)
+  setInterval(() => {
+    if (State.activeView === 'orders') {
+      loadOrders();
+    }
+  }, 10000);
+}
+
+// ============================================
+// ✅ DOM READY
+// ============================================
+document.addEventListener('DOMContentLoaded', async () => {
+  // Check for existing token
+  const token = localStorage.getItem('token');
+
+  if (token) {
+    try {
+      const data = await api.getMe();
+      State.currentUser = data.user;
+      await initApp();
+    } catch (error) {
+      console.error('Auto-login failed:', error);
+      localStorage.removeItem('token');
+    }
+  }
+
+  // Login form
+  document.getElementById('login-form').addEventListener('submit', handleLogin);
+});
+
+// Online/offline detection
+window.addEventListener('online', () => {
+  State.isOnline = true;
+  Toast.show('Back online', 'success');
+});
+
+window.addEventListener('offline', () => {
+  State.isOnline = false;
+  Toast.show('You are offline', 'warning');
 });
